@@ -54,6 +54,27 @@ LANGUAGES = {
     61: ['.io']
 };
 
+## "language_id": [ { "version_name": "language_id" }]
+VERSIONS = {
+    0: { 
+            "clang": 59
+        },
+    1: { 
+            "clang": 60,
+            "clang11": 66,
+            "clang14": 67,
+            "11": 49, "c11": 49, "c++11": 49, "cpp11": 49,
+            "14": 88, "c14": 88, "c++14": 88, "cpp14": 88
+        },
+    6: {
+            "3": 28, "py3": 28, "python3": 28,
+            "pypy": 32,
+            "pypy3": 73
+        }
+}
+
+    
+
 LOGIN_URL = 'https://www.acmicpc.net/signin'
 SUBMIT_URL = 'https://www.acmicpc.net/submit/{{problem_id}}'
 STATUS_URL = 'https://www.acmicpc.net/status/ajax';
@@ -68,13 +89,21 @@ read = lambda: sys.stdin.readline()
 write = lambda x: sys.stdout.write(x)
 
 
-def get_language(filename):
+def get_language(filename, version):
     dummy, extension = os.path.splitext(filename)
 
+    language = -1
     for key, value in LANGUAGES.items():
         if extension in value:
-            return int(key)
-    return -1
+            language = int(key)
+
+
+    if language != -1 and version is not None and language in VERSIONS:
+        for key, value in VERSIONS[language].items():
+            if version == key:
+                language = int(value)
+
+    return language
 
 def get_source(filename):
     if not os.path.exists(filename):
@@ -97,12 +126,31 @@ def wait_solution(solution_id):
         res = s.post(STATUS_URL, headers=solution_headers, data=data)
         result = json.loads(res.text)
         print result['result_name'];
-        if int(result['result']) > 3:
+        submit_result = int(result['result'])
+        if submit_result > 3:
+            if submit_result == 4:
+                print u'메모리: %sKB, 시간: %sMS' % (result['memory'], result['time'])
             break
         time.sleep(1)
 
 def get_submit_url(problem_id):
     return SUBMIT_URL.replace('{{problem_id}}', str(problem_id))
+
+def get_submit_failure_reason(text):
+    reasons = [
+        u'10초에 한 번 제출할 수 있습니다',
+        u'소스 코드가 너무 짧아요',
+        u'없는 언어 입니다',
+        u'이메일 인증을 받지 못해서 제출할 수 없습니다',
+        u'없는 문제 입니다',
+        u'제출할 수 없는 문제 입니다',
+        u'소스 코드가 너무 길어요'
+    ];
+
+    for index, reason in enumerate(reasons):
+        if reason in text:
+            return (-index, reasons[index])
+    return (-100, '알 수 없는 에러가 발생했습니다')
 
 def submit(problem_id, source, language):
     data = {
@@ -114,11 +162,14 @@ def submit(problem_id, source, language):
     url = get_submit_url(problem_id)
     res = s.post(url, headers=HEADERS, data=data)
     # get solution_id
-    m = re.search('watch_solution\([0-9]+\)', res.text)
-    m2 = re.search('[0-9]+', m.group(0))
+    try:
+        m = re.search('watch_solution\([0-9]+\)', res.text)
+        m2 = re.search('[0-9]+', m.group(0))
+        solution_id = int(m2.group(0))
+        return (solution_id, '')
+    except:
+        return get_submit_failure_reason(res.text)
     
-    solution_id = int(m2.group(0))
-    return solution_id
 
 def get_csrf_token(problem_id):
     url = get_submit_url(problem_id)
@@ -162,21 +213,34 @@ def main():
 
     # parse arguments vector
     argv = sys.argv[1:]
-    if len(argv) < 1 or len(argv) > 2:
-        print u'Usage: python submit.py filename'
-        print u'Usage: python submit.py problem_id filename'
+    if len(argv) < 1 or len(argv) > 3:
+        print u'Usage: python submit.py filename [version]'
+        print u'Usage: python submit.py problem_id filename [version]'
         return close_session()
 
     # get filename, problem_id from arguments
     if len(argv) == 1:
         filename = argv[0]
         problem_id = get_problem_id_from_filename(filename)
+        version = None
         if problem_id == -1:
                 print u'파일 이름은 문제번호.확장자 형식이 되어야 합니다'
                 return close_session()
     else:
-        problem_id = int(argv[0])
-        filename = argv[1]
+        try:
+            problem_id = int(argv[0])
+            filename = argv[1]
+            if len(argv) > 2:
+                version = argv[2]
+            else:
+                version = None
+        except:
+            filename = argv[0]
+            problem_id = get_problem_id_from_filename(filename)
+            if len(argv) > 1:
+                version = argv[1]
+            else:
+                version = None
 
     # get source from filename
     success, source = get_source(filename)
@@ -185,16 +249,21 @@ def main():
         return close_session()
 
     # get language_id
-    language = get_language(filename)
+    language = get_language(filename, version)
+
     if language == -1:
         print u'무슨 언어인지 모르겠어요. 확장자를 확인해 주세요'
         return close_session()
 
     # get username, password
-    write(u'아이디: ')
-    username = read().strip()
-    write(u'비밀번호: ')
-    password = getpass('')
+    try:
+        write(u'아이디: ')
+        username = read().strip()
+        write(u'비밀번호: ')
+        password = getpass('')
+    except:
+        print ''
+        return close_session()
 
     # validation check
     if not validation_check(username, password):
@@ -206,7 +275,10 @@ def main():
         return close_session()
 
     # submit source code
-    solution_id = submit(problem_id, source, language)
+    solution_id, msg = submit(problem_id, source, language)
+    if solution_id <= 0 :
+        print msg
+        return close_session()
     # wait result
     wait_solution(solution_id)
 
