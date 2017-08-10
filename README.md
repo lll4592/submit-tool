@@ -59,4 +59,9 @@ mv submit.py submit
 
 이렇게 하면 됩니다.
 
+###problem.py
+
+./problem.py 1000
+
+1000/ 에 1000번 문제의 샘플데이터를 저장합니다
 
