@@ -59,7 +59,7 @@ mv submit.py submit
 
 이렇게 하면 됩니다.
 
-### problem.py
+## problem.py
 
 ./problem.py 1000
 
