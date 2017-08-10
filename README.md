@@ -16,24 +16,34 @@ python submit.py 1920 1920.cpp
 
 ##버전 설정
 - python submit.py 1000.cc 14
+
   c++ 14로 제출합니다.
 - python submit.py 1000.cc 11
+
   c++ 11로 제출합니다.
 - python submit.py 1000.c clang
+
   c(clang)으로 제출합니다.
 - python submit.py 1000.cc clang
+
   c++(clang)으로 제출합니다.
 - python submit.py 1000.cc clang11
+
   c++(clang11)으로 제출합니다.
 - python submit.py 1000.cc clang14
+
   c++(clang14)으로 제출합니다.
 - python submit.py 1000.py 3
+
   python3 로 제출합니다.
 - python submit.py 1000.py py3
+
   python3 로 제출합니다.
 - python submit.py 1000.py pypy
+
   pypy로 제출합니다.
 - python submit.py 1000.py pypy3
+
   pypy3로 제출합니다.
 
 ###python을 치기 귀찮다면…
