@@ -1,5 +1,9 @@
 # [Baekjoon Online Judge](http://www.acmicpc.net/) Submit Tool
 
+## prerequisite
+
+- pip install -r requirements.txt
+
 ## Tool 사용법
 
 - python submit.py 파일이름 [버전]
