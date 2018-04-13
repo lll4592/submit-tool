@@ -78,6 +78,8 @@ VERSIONS = {
 LOGIN_URL = 'https://www.acmicpc.net/signin'
 SUBMIT_URL = 'https://www.acmicpc.net/submit/{{problem_id}}'
 STATUS_URL = 'https://www.acmicpc.net/status/ajax';
+CODE_OPEN_URL = 'https://www.acmicpc.net/setting/solution';
+
 HEADERS = {
         'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.7) Gecko/2009021910 Firefox/3.0.7',
     'Referer': 'https://www.acmicpc.net',
@@ -152,11 +154,27 @@ def get_submit_failure_reason(text):
             return (-index, reasons[index])
     return (-100, '알 수 없는 에러가 발생했습니다')
 
+def get_code_open():
+    code_open = ''
+    res = s.get(CODE_OPEN_URL, headers=HEADERS)
+    pos = res.text.find('input type = "radio" name = "code_open" id="code_open_open" value="open" checked')
+    if pos != -1:
+        code_open = 'open'
+    pos = res.text.find('input type = "radio" name = "code_open" id="code_open_close" value="close" checked')
+    if pos != -1:
+        code_open = 'close'
+    pos = res.text.find('input type = "radio" name = "code_open" id="code_open_accepted" value="onlyaccepted" checked')
+    if pos != -1:
+        code_open = 'onlyaccepted'
+    return code_open
+
 def submit(problem_id, source, language):
+
     data = {
         'problem_id': problem_id,
         'source': source,
         'language': language,
+        'code_open': get_code_open(),
         'csrf_key': get_csrf_token(problem_id)
     }
     url = get_submit_url(problem_id)
